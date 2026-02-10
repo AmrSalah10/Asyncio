@@ -19,6 +19,8 @@ These scripts demonstrate a practical scenario: downloading high-resolution imag
 - [5.real_examle_sync.py](file:///d:/Studying/Github%20Repos/Ayncio/5.real_examle_sync.py): The synchronous baseline using `requests` and serial processing.
 - [6.real_examle_async.py](file:///d:/Studying/Github%20Repos/Ayncio/6.real_examle_async.py): Async version using `aiohttp`, `aiofiles`, and `ProcessPoolExecutor` for significantly better performance.
 - [7.real_examle_async_v2.py](file:///d:/Studying/Github%20Repos/Ayncio/7.real_examle_async_v2.py): An alternative async version using `httpx` for modern async HTTP requests.
+- [8.real_examle_async_v3.py](file:///d:/Studying/Github%20Repos/Ayncio/8.real_examle_async_v3.py): Using `asyncio.Semaphore` with `httpx` to limit concurrent downloads, preventing server overload or rate limiting.
+- [9.real_examle_async_v4.py](file:///d:/Studying/Github%20Repos/Ayncio/9.real_examle_async_v4.py): Demonstrates connection limiting using `aiohttp.TCPConnector`, contrasting it with task-level concurrency control (`Semaphore`).
 
 ## Setup and Requirements
 This project uses `uv` for dependency management.

@@ -31,30 +31,33 @@ async def download_single_image(
     client: httpx.AsyncClient,
     url: str,
     img_num: int,
+    semaphore: asyncio.Semaphore
 ) -> Path:
-    print(f"Downloading {url}...")
-    ts = int(time.time())
-    url = f"{url}?ts={ts}"  # Add timestamp to avoid caching issues
+    async with semaphore:
+        print(f"Downloading {url}...")
+        ts = int(time.time())
+        url = f"{url}?ts={ts}"  # Add timestamp to avoid caching issues
 
-    response = await client.get(url, timeout=10, follow_redirects=True)
-    response.raise_for_status()
+        response = await client.get(url, timeout=10, follow_redirects=True)
+        response.raise_for_status()
 
-    filename = f"image_{img_num}.jpg"
-    download_path = ORIGINAL_DIR / filename
+        filename = f"image_{img_num}.jpg"
+        download_path = ORIGINAL_DIR / filename
 
-    async with aiofiles.open(download_path, "wb") as f:
-        async for chunk in response.aiter_bytes(chunk_size=8192):
-            await f.write(chunk)
+        async with aiofiles.open(download_path, "wb") as f:
+            async for chunk in response.aiter_bytes(chunk_size=8192):
+                await f.write(chunk)
 
     print(f"Downloaded and saved to: {download_path}")
     return download_path
 
 
 async def download_images(urls: list) -> list[Path]:
+    dl_semaphore = asyncio.Semaphore(4)
     async with httpx.AsyncClient() as client:
         async with asyncio.TaskGroup() as tg:
             tasks = [
-                tg.create_task(download_single_image(client, url, img_num))
+                tg.create_task(download_single_image(client, url, img_num, dl_semaphore))
                 for img_num, url in enumerate(urls, start=1)
             ]
 

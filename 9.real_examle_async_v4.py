@@ -4,7 +4,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import aiofiles
-import httpx
+import aiohttp
 from PIL import Image
 
 IMAGE_URLS = [
@@ -28,7 +28,7 @@ PROCESSED_DIR = Path("processed_images")
 
 
 async def download_single_image(
-    client: httpx.AsyncClient,
+    client: aiohttp.ClientSession,
     url: str,
     img_num: int,
 ) -> Path:
@@ -36,14 +36,14 @@ async def download_single_image(
     ts = int(time.time())
     url = f"{url}?ts={ts}"  # Add timestamp to avoid caching issues
 
-    response = await client.get(url, timeout=10, follow_redirects=True)
+    response = await client.get(url, timeout=10)
     response.raise_for_status()
 
     filename = f"image_{img_num}.jpg"
     download_path = ORIGINAL_DIR / filename
 
     async with aiofiles.open(download_path, "wb") as f:
-        async for chunk in response.aiter_bytes(chunk_size=8192):
+        async for chunk in response.content.iter_chunked(8192):
             await f.write(chunk)
 
     print(f"Downloaded and saved to: {download_path}")
@@ -51,7 +51,9 @@ async def download_single_image(
 
 
 async def download_images(urls: list) -> list[Path]:
-    async with httpx.AsyncClient() as client:
+    connector = aiohttp.TCPConnector(limit=4)
+
+    async with aiohttp.ClientSession(connector=connector) as client:
         async with asyncio.TaskGroup() as tg:
             tasks = [
                 tg.create_task(download_single_image(client, url, img_num))
@@ -159,3 +161,18 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+"""
+- asyncio.TaskGroup (or gather) fires all the requests/tasks at once.
+
+- The limit in TCPConnector only controls how many HTTP connections can be open at the same time 
+(how many connections are active), but it does not prevent all tasks from being started together.
+
+- asyncio.Semaphore is what actually limits how many tasks run in parallel at any moment 
+(it will not let a new download start until one of the running ones finishes).
+
+If you want to strictly control the number of parallel downloads (not just connections), 
+you should use a Semaphore with your download logic.
+
+"""

@@ -24,7 +24,7 @@ async def main():
 if __name__ == "__main__":
     t1 = time.perf_counter()
 
-    results = asyncio.run(main())
+    results = asyncio.run(main(), debug=True)
     print(results)
 
     t2 = time.perf_counter()
